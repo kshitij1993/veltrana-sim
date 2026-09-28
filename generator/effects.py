@@ -110,6 +110,14 @@ def _apply_e1(rng: np.random.Generator, world: dict, params: dict) -> None:
         patients.loc[flip_idx, "index_product"] = _reassign_to_non_veltrana(rng, n_flip)
     params["n_patients_affected"] = n_flip
 
+    if params["dimension"] == "plan":
+        # Ground truth for the future formulary source module - a plan-grain
+        # decision, unlike the region-dimension case, which has no formulary
+        # analogue and is left for that module to leave alone.
+        world["formulary_downgrades"] = pd.DataFrame(
+            [{"plan_id": params["target"], "start_date": params["start_date"]}]
+        )
+
 
 def _describe_e1(params: dict) -> str:
     return (

@@ -5,6 +5,7 @@ hardcode a number that belongs here.
 """
 
 from datetime import date
+from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Timeline
@@ -144,6 +145,95 @@ CLAIMS_LAG_WEEKS = (4, 6)
 
 RX_AUDIT_LAG_WEEKS = 2
 RX_AUDIT_PROJECTION_NOISE_SD = 0.03  # as a fraction of true weekly volume
+
+# ---------------------------------------------------------------------------
+# Fill / dosing cadence - drives the shared true-fills event stream that
+# sources/rx_audit.py, sources/claims.py, sources/sp_hub.py, and
+# sources/sell_in.py all derive from, so the same underlying event shows up
+# (differently distorted) in every one of them.
+# ---------------------------------------------------------------------------
+
+# Days between fills after the first, per product. Veltrana's induction
+# interval (week 0 -> week 4) is a separate special case below; this is its
+# steady-state maintenance cadence.
+PRODUCT_FILL_INTERVAL_DAYS = {
+    "VELTRANA": 84,             # q12w maintenance
+    "DERMAVEX": 28,             # monthly SC
+    "CLARIVO": 56,              # q8w SC
+    "ADALIMUMAB_BIOSIM": 14,    # q2w SC
+    "ORELTA": 30,               # daily oral, dispensed as a 30-day supply
+}
+VELTRANA_INDUCTION_INTERVAL_DAYS = 28  # week 0 -> week 4
+
+NDC_PREFIX = {
+    "VELTRANA": "00001",
+    "DERMAVEX": "00002",
+    "CLARIVO": "00003",
+    "ADALIMUMAB_BIOSIM": "00004",
+    "ORELTA": "00005",
+}
+
+# ---------------------------------------------------------------------------
+# Patient claims (LAAD/Symphony-style) - additional quirks beyond the
+# coverage/lag constants above.
+# ---------------------------------------------------------------------------
+
+CLAIMS_LATE_ADJUDICATION_RATE = 0.08
+CLAIMS_LATE_ADJUDICATION_EXTRA_WEEKS = (2, 8)
+CLAIMS_ELIGIBILITY_GAP_RATE = 0.05
+CLAIMS_ELIGIBILITY_GAP_DAYS = (30, 120)
+
+# ---------------------------------------------------------------------------
+# SP and hub status feed (852/867 + hub-style)
+# ---------------------------------------------------------------------------
+
+SP_HUB_EVENT_LAG_DAYS = (0, 2)
+
+# ---------------------------------------------------------------------------
+# Sell-in (867 / ex-factory)
+# ---------------------------------------------------------------------------
+
+SELL_IN_LEAD_DAYS = (-5, 10)  # sell-in timing jitter vs. the true dispense it covers
+
+# ---------------------------------------------------------------------------
+# CRM calls (Veeva-style)
+# ---------------------------------------------------------------------------
+
+CALLS_PER_HCP_PER_QUARTER_BASE = 1.5
+CALLS_TARGETING_SELECTION_STRENGTH = 0.35  # always-on: reps skew calls to high-potential HCPs
+CALLS_DUPLICATE_LOG_RATE = 0.04
+CALLS_LATE_ENTRY_RATE = 0.10
+CALLS_LATE_ENTRY_DAYS = (1, 10)
+
+# ---------------------------------------------------------------------------
+# HCP master (OneKey-style MDM)
+# ---------------------------------------------------------------------------
+
+HCP_MASTER_DUPLICATE_RATE = 0.08
+HCP_MASTER_ADDRESS_MOVE_RATE_PER_QUARTER = 0.03
+HCP_MASTER_SPECIALTY_MISMATCH_RATE = 0.02
+
+# ---------------------------------------------------------------------------
+# Formulary (MMIT-style)
+# ---------------------------------------------------------------------------
+
+FORMULARY_REGIONAL_PLAN_COVERAGE = 0.5  # "major plans" - not every regional plan is tracked
+FORMULARY_EFFECTIVE_DATE_LAG_DAYS = (14, 45)
+
+# ---------------------------------------------------------------------------
+# Alignment (zip-to-territory)
+# ---------------------------------------------------------------------------
+
+N_ZIPS_PER_TERRITORY = 40
+ALIGNMENT_REALIGNMENT_DATE = date(2025, 1, 1)  # always-on structural quirk, not a sampled effect
+ALIGNMENT_REALIGNMENT_FRACTION = 0.08
+
+# ---------------------------------------------------------------------------
+# Bronze export
+# ---------------------------------------------------------------------------
+
+BRONZE_DIR = Path(__file__).resolve().parent.parent / "data" / "bronze"
+EXPORT_FORMAT = "parquet"  # "csv" or "parquet"
 
 # ---------------------------------------------------------------------------
 # Random seed

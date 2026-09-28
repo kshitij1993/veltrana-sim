@@ -1,6 +1,9 @@
 # Sealed until Phase 5 - see README "Delivery phases"
 generator/answer_key.json
 
+# Generated Bronze exports - regenerate with generator/export.py
+data/
+
 __pycache__/
 *.pyc
 .venv/
