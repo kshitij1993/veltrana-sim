@@ -1,0 +1,6 @@
+# Sealed until Phase 5 - see README "Delivery phases"
+generator/answer_key.json
+
+__pycache__/
+*.pyc
+.venv/
