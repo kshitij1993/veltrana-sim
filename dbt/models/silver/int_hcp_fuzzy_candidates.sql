@@ -13,7 +13,26 @@
 -- plants more than one duplicate per real HCP, so a match graph is only
 -- ever isolated pairs, never longer chains needing full transitive
 -- closure.
-{% set threshold = 0.55 %}
+--
+-- address_sim >= 0.5 is a hard requirement, not just part of the
+-- weighted score. It was added after an audit of a run's fuzzy matches
+-- turned up 5 false positives out of 325 (two different real HCPs who
+-- happened to share last name + territory + specialty, e.g. two
+-- different "Tammy Williams", both dermatologists in T0401) - every one
+-- of them scored above the old 0.55 match_score threshold on last-name +
+-- first-name similarity alone, with a real address_sim under 0.3. Every
+-- *genuine* duplicate in that same audit had
+-- address_sim >= 0.667 (nearly all exactly 1.0) - a real duplicate
+-- record is a re-entry of the same provider's same known address, so a
+-- clean gap between "same address, near-certainly the same person" and
+-- "same surname at a different address, near-certainly two different
+-- people" is the reliable signal here, more reliable than the blended
+-- score (true-match/false-positive match_scores came within 0.02 of
+-- each other: 0.725 vs 0.707). Same-name-different-address pairs like
+-- that no longer match at all now; a true duplicate never loses because
+-- of it.
+{% set threshold = 0.6 %}
+{% set address_sim_floor = 0.5 %}
 
 with base as (
     select * from {{ ref('int_hcp_master_latest') }}
@@ -42,6 +61,7 @@ scored as (
     select *
     from candidates
     where match_score >= {{ threshold }}
+      and address_sim >= {{ address_sim_floor }}
 ),
 
 best_per_a as (
