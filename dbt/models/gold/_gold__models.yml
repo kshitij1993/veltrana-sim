@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: patient_journey_funnel
+    description: >
+      One row per Veltrana patient: referral -> BV -> PA -> first-fill
+      funnel from silver.sp_hub_normalized, plus an observed (claims-
+      derived, censoring-biased - see model comments) persistence proxy
+      from silver.claims_clean.
+    columns:
+      - name: patient_id
+        tests:
+          - unique
+          - not_null
+      - name: reached_bv
+        tests:
+          - not_null
+      - name: reached_pa_approval
+        tests:
+          - not_null
+      - name: reached_first_fill
+        tests:
+          - not_null
+      - name: abandoned
+        tests:
+          - not_null

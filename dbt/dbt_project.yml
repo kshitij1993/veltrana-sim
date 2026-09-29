@@ -16,11 +16,17 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Fuzzy matching in silver.hcp_golden_record needs pg_trgm's similarity().
+# pg_trgm: fuzzy matching in silver.hcp_golden_record needs similarity().
+# pgcrypto: gold.patient_journey_funnel needs digest() to recompute claims'
+# patient token (see that model's comments for why that's legitimate).
 on-run-start:
   - "create extension if not exists pg_trgm"
+  - "create extension if not exists pgcrypto"
 
 models:
   veltrana_sim:
     silver:
       +materialized: table
+    gold:
+      +materialized: table
+      +schema: gold
