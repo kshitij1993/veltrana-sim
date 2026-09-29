@@ -144,6 +144,12 @@ CLAIMS_MEDICAID_UNDERCAPTURE = 0.35  # additional coverage penalty for Medicaid 
 CLAIMS_LAG_WEEKS = (4, 6)
 
 RX_AUDIT_LAG_WEEKS = 2
+# The vendor projects from a sampled pharmacy panel up to national volume,
+# so projected units are the true count times a panel-to-national factor
+# (not centered on 1.0) plus noise - not just true count plus symmetric
+# noise, which would too often round back to a clean integer at the small
+# weekly volumes typical for a single HCP.
+RX_AUDIT_PROJECTION_FACTOR = 1.08
 RX_AUDIT_PROJECTION_NOISE_SD = 0.03  # as a fraction of true weekly volume
 
 # ---------------------------------------------------------------------------

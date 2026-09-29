@@ -27,7 +27,7 @@ def generate(world: dict, rng: np.random.Generator, fills: pd.DataFrame) -> pd.D
         .rename(columns={"size": "true_units"})
     )
 
-    noise = rng.normal(1.0, cfg.RX_AUDIT_PROJECTION_NOISE_SD, size=len(agg))
+    noise = rng.normal(cfg.RX_AUDIT_PROJECTION_FACTOR, cfg.RX_AUDIT_PROJECTION_NOISE_SD, size=len(agg))
     agg["projected_units"] = np.clip(agg["true_units"] * noise, 0, None).round(2)
 
     restatement = world.get("vendor_restatement")
