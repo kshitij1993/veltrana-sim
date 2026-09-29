@@ -70,3 +70,81 @@ models:
               arguments:
                 to: ref('hcp_golden_record')
                 field: golden_hcp_id
+
+  - name: rx_audit_clean
+    description: >
+      bronze.rx_audit with hcp_id replaced by golden_hcp_id via
+      hcp_golden_record_xref. Every other value is untouched Bronze
+      output - projection noise, restatement shift, and all.
+    columns:
+      - name: golden_hcp_id
+        description: Null would mean some rx_audit hcp_id failed to resolve to a golden record - should never happen.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hcp_golden_record')
+                field: golden_hcp_id
+
+  - name: claims_clean
+    description: >
+      bronze.claims with hcp_id replaced by golden_hcp_id via
+      hcp_golden_record_xref. Every other value, including the already-
+      tokenized patient_token, is untouched Bronze output.
+    columns:
+      - name: claim_id
+        tests:
+          - unique
+          - not_null
+      - name: golden_hcp_id
+        description: Null would mean some claims hcp_id failed to resolve to a golden record - should never happen.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hcp_golden_record')
+                field: golden_hcp_id
+
+  - name: sp_hub_normalized
+    description: >
+      bronze.sp_hub with each SP's own status_code vocabulary collapsed
+      to one canonical journey_stage via the sp_status_code_map seed, so
+      a funnel doesn't need per-SP branching logic.
+    columns:
+      - name: event_id
+        tests:
+          - unique
+          - not_null
+      - name: journey_stage
+        description: Null would mean some (sp, status_code) pair wasn't in the seed - should never happen.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - referral_received
+                  - benefit_verification
+                  - pa_pending
+                  - pa_approved
+                  - pa_denied
+                  - first_fill
+                  - refill
+                  - abandoned
+
+seeds:
+  - name: sp_status_code_map
+    description: >
+      sp x status_code -> canonical journey_stage, generated straight
+      from generator/config.py's SP_STATUS_CODE_MAPS (see the script
+      note at the top of the CSV's generation - it's not hand-maintained
+      separately from the generator's own definition).
+    columns:
+      - name: sp
+        tests:
+          - not_null
+      - name: status_code
+        tests:
+          - not_null
+      - name: journey_stage
+        tests:
+          - not_null
