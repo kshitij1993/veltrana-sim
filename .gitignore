@@ -9,3 +9,8 @@ __pycache__/
 .venv/
 
 .env
+
+# dbt build artifacts - the real profile lives in ~/.dbt/profiles.yml, never here
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/

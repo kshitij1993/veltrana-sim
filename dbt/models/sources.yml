@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: >
+      Straight, untransformed load of the generator's own Bronze exports
+      (generator/export.py writes the Parquet, generator/load_bronze.py
+      loads it here 1:1). Schema was inferred from each dataframe's own
+      dtypes - no cleanup happened before this point.
+    schema: bronze
+    tables:
+      - name: rx_audit
+        description: HCP x product x payer channel x week, vendor-projected volume.
+      - name: claims
+        description: Patient x claim, tokenized patient IDs, ~65% coverage.
+      - name: sp_hub
+        description: Veltrana-only patient status events, per-SP status-code vocabulary.
+      - name: sell_in
+        description: SP x NDC x day shipment ledger (manufacturer's own).
+      - name: crm_calls
+        description: Call x rep x HCP, daily.
+      - name: rep_roster
+        description: "Rep x territory x month: 100% coverage, vacancies visible only here."
+      - name: hcp_master
+        description: >
+          Quarterly MDM snapshot of the HCP roster (14 quarters loaded).
+          Contains ~8% duplicate records: the same real HCP entered a
+          second time under a different hcp_id, with a blank or mistyped
+          NPI and a reformatted name/address - not a valid NPI join key.
+      - name: formulary
+        description: Plan x product x quarter formulary state, major plans only.
+      - name: alignment
+        description: Zip x territory, annual, one mid-period realignment.

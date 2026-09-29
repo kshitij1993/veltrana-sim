@@ -78,7 +78,10 @@ def create_table(cur, table: str, df: pd.DataFrame) -> None:
     cols_sql = ",\n    ".join(
         f"{quote_ident(col)} {pg_type_for_column(df[col])}" for col in df.columns
     )
-    cur.execute(f"DROP TABLE IF EXISTS bronze.{quote_ident(table)}")
+    # CASCADE because downstream dbt models (e.g. silver.int_hcp_master_normalized)
+    # hold a live view dependency on bronze tables - a Bronze reload is expected to
+    # blow those away too; rerun `dbt run` afterward to rebuild them.
+    cur.execute(f"DROP TABLE IF EXISTS bronze.{quote_ident(table)} CASCADE")
     cur.execute(f"CREATE TABLE bronze.{quote_ident(table)} (\n    {cols_sql}\n)")
 
 

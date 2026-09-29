@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: int_hcp_master_normalized
+    description: bronze.hcp_master with matching-key normalization added. One row per raw quarterly snapshot row.
+
+  - name: int_hcp_master_latest
+    description: One row per raw identity (collapse_key), collapsed to its latest known quarterly state.
+    columns:
+      - name: collapse_key
+        tests:
+          - unique
+          - not_null
+
+  - name: int_hcp_fuzzy_candidates
+    description: Mutual best-match candidate pairs across raw identities, blocked on territory + specialty.
+
+  - name: int_hcp_golden_assignment
+    description: Every raw identity mapped to the canonical key of its golden group.
+    columns:
+      - name: collapse_key
+        tests:
+          - unique
+          - not_null
+      - name: canonical_key
+        tests:
+          - not_null
+
+  - name: int_hcp_golden_ids
+    description: One stable surrogate golden_hcp_id per canonical key.
+    columns:
+      - name: canonical_key
+        tests:
+          - unique
+          - not_null
+      - name: golden_hcp_id
+        tests:
+          - unique
+          - not_null
+
+  - name: hcp_golden_record
+    description: >
+      One row per real HCP after deduping bronze.hcp_master's quarterly
+      snapshots and merging the ~8% duplicate MDM records that didn't
+      share a usable npi with their real counterpart.
+    columns:
+      - name: golden_hcp_id
+        description: Silver's own surrogate key for a real HCP - not any single source system's id.
+        tests:
+          - unique
+          - not_null
+      - name: n_source_records
+        description: How many raw hcp_master identities (distinct hcp_id) fed into this golden record.
+        tests:
+          - not_null
+
+  - name: hcp_golden_record_xref
+    description: >
+      Audit trail from every raw hcp_master identity to the golden_hcp_id
+      it collapsed into, with the match evidence behind any fuzzy match.
+    columns:
+      - name: raw_identity_key
+        tests:
+          - unique
+          - not_null
+      - name: golden_hcp_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hcp_golden_record')
+                field: golden_hcp_id
