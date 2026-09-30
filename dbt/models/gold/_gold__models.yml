@@ -87,9 +87,12 @@ models:
           - not_null
 
   - name: int_persistence_km
-    description: Kaplan-Meier life table over Veltrana patients' fill/refill history from sp_hub_normalized.
+    description: >
+      Kaplan-Meier life table over Veltrana patients' fill/refill
+      history, discontinuation detected per-patient against their own
+      expected next-fill date (not a population-wide flat gap rule).
     columns:
-      - name: months_since_first_fill
+      - name: days_since_first_fill
         tests:
           - unique
           - not_null

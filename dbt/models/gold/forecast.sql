@@ -68,7 +68,7 @@ cohort_x_quarter as (
         q.quarter_end,
         c.n_starts,
         c.is_projected,
-        floor((q.quarter_end - c.start_month) / 30.0)::int as months_elapsed
+        (q.quarter_end - c.start_month) as days_elapsed
     from quarter_ends q
     cross join cohort_months c
     where c.start_month <= q.quarter_end
@@ -84,8 +84,8 @@ from cohort_x_quarter cq
 left join lateral (
     select km_survival
     from {{ ref('int_persistence_km') }} km2
-    where km2.months_since_first_fill <= cq.months_elapsed
-    order by km2.months_since_first_fill desc
+    where km2.days_since_first_fill <= cq.days_elapsed
+    order by km2.days_since_first_fill desc
     limit 1
 ) km on true
 group by cq.quarters_ahead, cq.quarter_end

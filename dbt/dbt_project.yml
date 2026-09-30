@@ -16,11 +16,13 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Must mirror generator/config.py's PRODUCT_FILL_INTERVAL_DAYS["VELTRANA"].
-# Referenced, not hardcoded, so a threshold derived from it (e.g.
-# int_persistence_km's discontinuation gap) stays traceable to the
-# product's actual dosing cadence instead of being a bare magic number.
+# Must mirror generator/config.py's dosing-schedule constants exactly
+# (VELTRANA_INDUCTION_INTERVAL_DAYS, PRODUCT_FILL_INTERVAL_DAYS["VELTRANA"]).
+# Referenced, not hardcoded, so int_persistence_km's per-patient
+# discontinuation detection stays traceable to the product's actual
+# dosing cadence instead of being bare magic numbers.
 vars:
+  veltrana_induction_interval_days: 28
   veltrana_maintenance_interval_days: 84
 
 # pg_trgm: fuzzy matching in silver.hcp_golden_record needs similarity().
