@@ -131,6 +131,60 @@ models:
                   - refill
                   - abandoned
 
+  - name: alignment
+    description: bronze.alignment passed through as-is - zip x territory x effective_date.
+    columns:
+      - name: zip
+        tests:
+          - not_null
+
+  - name: formulary
+    description: bronze.formulary passed through as-is - plan x product x quarter formulary state.
+    columns:
+      - name: plan_id
+        tests:
+          - not_null
+      - name: formulary_state
+        tests:
+          - not_null
+
+  - name: sell_in
+    description: bronze.sell_in passed through as-is - SP x NDC x day shipment ledger.
+    columns:
+      - name: sell_in_id
+        tests:
+          - unique
+          - not_null
+
+  - name: crm_calls
+    description: bronze.crm_calls with hcp_id replaced by golden_hcp_id.
+    columns:
+      - name: call_id
+        tests:
+          - unique
+          - not_null
+      - name: golden_hcp_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hcp_golden_record')
+                field: golden_hcp_id
+
+  - name: rep_roster
+    description: >
+      bronze.rep_roster plus n_zips from silver.alignment as of each
+      row's month - surfaces the mid-period realignment as a change in
+      zip count per territory rather than adding new business logic.
+    columns:
+      - name: territory_id
+        tests:
+          - not_null
+      - name: n_zips
+        description: Null would mean some territory_id/month never matched an alignment snapshot - should never happen.
+        tests:
+          - not_null
+
 seeds:
   - name: sp_status_code_map
     description: >

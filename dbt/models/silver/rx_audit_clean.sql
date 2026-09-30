@@ -15,6 +15,7 @@ select
     r.payer_channel,
     r.week_of,
     r.report_date,
-    r.projected_units
+    r.projected_nrx,
+    r.projected_trx
 from {{ source('bronze', 'rx_audit') }} r
 left join {{ ref('hcp_golden_record_xref') }} x on x.raw_hcp_id = r.hcp_id

@@ -148,14 +148,14 @@ def check_sp_hub(world: dict, sp_hub: pd.DataFrame) -> list[dict]:
 
 
 def check_rx_audit_noninteger(rx_audit: pd.DataFrame) -> dict:
-    """(4) rx_audit.parquet's projected_units should be non-integer for the
+    """(4) rx_audit.parquet's projected_trx should be non-integer for the
     overwhelming majority of rows (the vendor projection noise)."""
-    values = rx_audit["projected_units"].to_numpy()
+    values = rx_audit["projected_trx"].to_numpy()
     is_integer = np.isclose(values, np.round(values))
     pct_noninteger = 1 - is_integer.mean()
     return {
         "check": "4. rx_audit noise",
-        "metric": "% of projected_units that are non-integer",
+        "metric": "% of projected_trx that are non-integer",
         "expected": "> 90%",
         "actual": f"{pct_noninteger:.1%}",
         "status": "PASS" if pct_noninteger > 0.90 else "FAIL",

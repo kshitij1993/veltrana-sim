@@ -24,3 +24,93 @@ models:
       - name: abandoned
         tests:
           - not_null
+
+  - name: sell_in_reconciliation
+    description: >
+      Sell-in (silver.sell_in) vs. observed dispense (silver.sp_hub_normalized
+      first_fill + refill events) by month and SP - not claims, which has
+      no sp column at all.
+    columns:
+      - name: sp
+        tests:
+          - not_null
+      - name: month
+        tests:
+          - not_null
+
+  - name: launch_curve
+    description: Veltrana's cumulative NBRx by month since launch vs. Clarivo (the IL-23 analog) over the same calendar months.
+    columns:
+      - name: months_since_launch
+        tests:
+          - unique
+          - not_null
+
+  - name: hcp_segments
+    description: >
+      One row per golden HCP: peer-estimated potential decile (within
+      specialty + territory) vs. actual Veltrana TRx, plus calls
+      received, with whitespace/over-served flags.
+    columns:
+      - name: golden_hcp_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('hcp_golden_record')
+                field: golden_hcp_id
+
+  - name: call_response
+    description: >
+      HCP x quarter: calls (bucketed) against Veltrana TRx that quarter,
+      with potential_decile carried alongside so selection bias stays
+      visible instead of collapsing into one aggregate correlation.
+    columns:
+      - name: call_bucket
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["0", "1-3", "4-6", "7+"]
+
+  - name: formulary_impact
+    description: >
+      Plan-grain diff-in-diff: claims-derived Veltrana NBRx before/after
+      each detected formulary_state change vs. a control average across
+      plans with no change that quarter.
+    columns:
+      - name: plan_id
+        tests:
+          - not_null
+      - name: change_quarter
+        tests:
+          - not_null
+
+  - name: int_persistence_km
+    description: Kaplan-Meier life table over Veltrana patients' fill/refill history from sp_hub_normalized.
+    columns:
+      - name: months_since_first_fill
+        tests:
+          - unique
+          - not_null
+
+  - name: forecast
+    description: >
+      4-quarter active-patient projection: trailing observed start rate
+      x int_persistence_km's survival curve, not a naive trend line.
+    columns:
+      - name: quarters_ahead
+        tests:
+          - unique
+          - not_null
+
+  - name: sales_decline_decomposition
+    description: >
+      Region R06, Q1->Q2 2026: change in Veltrana TRx decomposed into
+      exact market + share components, then share further split into
+      access, field, and residual (see model notes on why those two are
+      proxies, not causal estimates).
+    columns:
+      - name: region_id
+        tests:
+          - not_null
