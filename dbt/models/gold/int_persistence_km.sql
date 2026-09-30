@@ -5,17 +5,32 @@
 -- haven't observed their next refill yet." Built from
 -- sp_hub_normalized (100% Veltrana coverage) rather than claims
 -- (~65% sampled) because a survival estimate needs a clean
--- discontinuation signal, not claims' sampling-driven gaps.
+-- discontinuation signal, not claims' sampling-driven gaps. This table
+-- only ever contains Veltrana patients - sp_hub_normalized's source
+-- feed has no competitor visibility at all - so there is no
+-- cross-product comparison happening here.
 --
 -- event_observed = 1 (discontinuation) when the gap between a patient's
--- last observed fill/refill and the end of the data window exceeds 168
--- days - 2x Veltrana's 84-day maintenance interval, room for one missed
--- cycle before calling it a discontinuation rather than "hasn't had
--- their next scheduled refill yet." Otherwise the patient is
--- right-censored: still possibly active, observation just stopped at
--- SIM_END. n_at_risk(t) counts everyone followed at least t months;
--- km_survival is the standard cumulative product of (1 - events/at_risk)
--- across every duration up to and including t.
+-- last observed fill/refill and the end of the data window exceeds 2x
+-- the product's own maintenance interval (var veltrana_maintenance_interval_days,
+-- mirroring generator/config.py) - room for one missed cycle before
+-- calling it a discontinuation rather than "hasn't had their next
+-- scheduled refill yet." Otherwise the patient is right-censored.
+--
+-- duration_months is NOT simply (last_event - first_fill) for every
+-- patient - that was a real bug in an earlier version of this model.
+-- For a discontinued patient, last_event is a reasonable proxy for when
+-- the failure happened. For a CENSORED patient, last_event is only when
+-- they last happened to refill - it understates how long they were
+-- actually followed, since we know they were still at risk all the way
+-- to the end of the data window even without a refill event that
+-- recently. Duration for censored patients has to extend to the end of
+-- the window (sim_end_date), or the risk set thins out artificially at
+-- longer durations and the tail of the curve is built on a
+-- systematically undercounted population. n_at_risk(t) counts everyone
+-- followed at least t months; km_survival is the standard cumulative
+-- product of (1 - events/at_risk) across every duration up to and
+-- including t.
 with sp_events as (
     select patient_id, event_date
     from {{ ref('sp_hub_normalized') }}
@@ -38,8 +53,18 @@ sim_end as (
 duration_calc as (
     select
         p.patient_id,
-        floor(extract(epoch from (p.last_event_date - p.first_fill_date)) / 86400.0 / 30)::int as duration_months,
-        case when (s.sim_end_date - p.last_event_date) > interval '168 days' then 1 else 0 end as event_observed
+        case
+            when (s.sim_end_date - p.last_event_date)
+                 > (2 * {{ var('veltrana_maintenance_interval_days') }}) * interval '1 day'
+            then 1
+            else 0
+        end as event_observed,
+        case
+            when (s.sim_end_date - p.last_event_date)
+                 > (2 * {{ var('veltrana_maintenance_interval_days') }}) * interval '1 day'
+            then floor(extract(epoch from (p.last_event_date - p.first_fill_date)) / 86400.0 / 30)::int
+            else floor(extract(epoch from (s.sim_end_date - p.first_fill_date)) / 86400.0 / 30)::int
+        end as duration_months
     from patient_span p
     cross join sim_end s
 ),
